@@ -12,6 +12,35 @@ const config = {
   messagingSenderId: "710136502269",
   appId: "1:710136502269:web:ee57d57bb777d98b"
 };
+export const addCollectionAndDocuments = async (collectionKey, documentsToAdd) => {
+  const collectionRef = firestore.collection(collectionKey);
+  
+  const batch = firestore.batch();
+  documentsToAdd.forEach(document => {
+    const newDocumentRef = collectionRef.doc();
+    batch.set(newDocumentRef, document);
+  });
+  return await batch.commit()
+}
+
+
+export const convertCollectionsSnapshotToMap = (collections) => {
+  const transformedCollection = collections.docs.map( doc => {
+    const {title, items} = doc.data();
+
+    return {
+      routeName : encodeURI(title.toLowerCase() ),
+      id : doc.id,
+      title,
+      items
+    }
+  });
+  return transformedCollection.reduce( (accumulator, collection) => {
+    accumulator[collection.title.toLowerCase() ] = collection;
+    return accumulator
+  }, {})
+}
+
 export const createUserProfileDocument = async ( userAuth, additionalData) => {
   if ( !userAuth ) return;
   
@@ -20,12 +49,6 @@ export const createUserProfileDocument = async ( userAuth, additionalData) => {
   if( ! snapshop.exists) {
     const { displayName, email } = userAuth;
     const createAt = new Date();
-    // console.log("--------------- user auth -------------");
-    // console.log(displayName);
-    // console.log(" ---------- params --------------");
-    // console.log(additionalData);
-
-
     try {
       await userRef.set({
         displayName,
